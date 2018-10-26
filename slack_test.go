@@ -1,8 +1,8 @@
 package slack_test
 
 import (
+	"fmt"
 	"github.com/int128/slack"
-	"log"
 )
 
 const webhook = "https://hooks.slack.com/services/..."
@@ -13,6 +13,6 @@ func ExampleSend() {
 		IconEmoji: ":star:",
 		Text:      "Hello World!",
 	}); err != nil {
-		log.Fatalf("Could not send the message to Slack: %s", err)
+		panic(fmt.Errorf("Could not send the message to Slack: %s", err))
 	}
 }

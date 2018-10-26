@@ -1,5 +1,5 @@
-// Package slack provides Slack Incoming Webhooks.
-// See also https://api.slack.com/docs/messages
+// Package slack provides a client for Slack Incoming Webhooks API.
+// See https://api.slack.com/docs/messages for details of the API.
 package slack
 
 import (
@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-// Message represents a message sent via Incoming WebHook API.
+// Message represents a message sent via Incoming Webhook API.
 // See https://api.slack.com/docs/message-formatting for details.
 type Message struct {
 	Username    string       `json:"username,omitempty"`
@@ -49,17 +49,27 @@ type AttachmentField struct {
 	Short bool   `json:"short,omitempty"`
 }
 
-// Send sends the message to Slack via Incomming WebHook API.
-// It returns an error if the API did not return 2xx status.
-func Send(webHookURL string, message *Message) error {
+// Client provides a client for Slack Incoming Webhook API.
+type Client struct {
+	WebhookURL string       // Webhook URL (mandatory)
+	HTTPClient *http.Client // Default to http.DefaultClient
+}
+
+// Send sends the message to Slack.
+// It returns an error if a HTTP client returned non-2xx status or network error.
+func (c *Client) Send(message *Message) error {
 	if message == nil {
 		return fmt.Errorf("message is nil")
 	}
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(message); err != nil {
-		return fmt.Errorf("Could not encode JSON: %s", err)
+		return fmt.Errorf("Could not encode the message to JSON: %s", err)
 	}
-	resp, err := http.Post(webHookURL, "application/json", &b)
+	hc := c.HTTPClient
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	resp, err := hc.Post(c.WebhookURL, "application/json", &b)
 	if err != nil {
 		return fmt.Errorf("Could not send the request: %s", err)
 	}
@@ -72,4 +82,10 @@ func Send(webHookURL string, message *Message) error {
 		return fmt.Errorf("Slack API returned %s: %s", resp.Status, string(b))
 	}
 	return nil
+}
+
+// Send sends the message to Slack via Incomming Webhook API.
+// It returns an error if a HTTP client returned non-2xx status or network error.
+func Send(WebhookURL string, message *Message) error {
+	return (&Client{WebhookURL: WebhookURL}).Send(message)
 }

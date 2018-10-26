@@ -1,6 +1,6 @@
 # slack [![CircleCI](https://circleci.com/gh/int128/slack.svg?style=shield)](https://circleci.com/gh/int128/slack)
 
-A library to send messages to Slack and Mattermost via [Incoming WebHook API](https://api.slack.com/docs/messages), written in Go.
+A library to send messages to Slack and Mattermost via [Incoming Webhook API](https://api.slack.com/docs/messages), written in Go.
 
 See [GoDoc](https://godoc.org/github.com/int128/slack) for more.
 
