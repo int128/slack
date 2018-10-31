@@ -10,14 +10,30 @@ import (
 	"net/http"
 )
 
+var enable = true
+var disable = false
+
+type boolFlag *bool
+
+// Enable represents a pointer to true value, for *bool.
+var Enable = boolFlag(&enable)
+
+// Disable represents a pointer to false value, for *bool.
+var Disable = boolFlag(&disable)
+
 // Message represents a message sent via Incoming Webhook API.
-// See https://api.slack.com/docs/message-formatting for details.
+//
+// See https://api.slack.com/docs/message-formatting and
+// https://api.slack.com/docs/message-link-unfurling.
 type Message struct {
 	Username    string       `json:"username,omitempty"`
 	Channel     string       `json:"channel,omitempty"`
 	IconEmoji   string       `json:"icon_emoji,omitempty"`
 	IconURL     string       `json:"icon_url,omitempty"`
 	Text        string       `json:"text,omitempty"`
+	Mrkdwn      boolFlag     `json:"mrkdwn,omitempty"`       // Set false to disable formatting.
+	UnfurlMedia boolFlag     `json:"unfurl_media,omitempty"` // Set false to disable unfurling.
+	UnfurlLinks boolFlag     `json:"unfurl_links,omitempty"` // Set true to enable unfurling.
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
@@ -39,7 +55,7 @@ type Attachment struct {
 	Footer     string            `json:"footer,omitempty"`
 	FooterIcon string            `json:"footer_icon,omitempty"`
 	Timestamp  int64             `json:"ts,omitempty"`
-	MrkdwnIn   []string          `json:"mrkdwn_in,omitempty"` // pretext, text, fields
+	MrkdwnIn   []string          `json:"mrkdwn_in,omitempty"` // Valid values are pretext, text, fields
 }
 
 // AttachmentField represents a field in an attachment.
