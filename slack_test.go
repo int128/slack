@@ -3,6 +3,10 @@ package slack_test
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/int128/slack"
@@ -31,6 +35,31 @@ func ExampleClient_Send() {
 		Text:      "Hello World!",
 	}); err != nil {
 		panic(fmt.Errorf("Could not send the message to Slack: %s", err))
+	}
+}
+
+func TestSend(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		if r.Method != "POST" {
+			t.Errorf("Method wants POST but %s", r.Method)
+		}
+		if r.URL.Path != "/webhook" {
+			t.Errorf("Path wants /webhook but %s", r.URL.Path)
+		}
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Could not read body: %s", err)
+			return
+		}
+		body := strings.TrimSpace(string(b))
+		if body != "{}" {
+			t.Errorf("Body wants {} but %s", body)
+		}
+	}))
+	defer s.Close()
+	if err := slack.Send(s.URL+"/webhook", &slack.Message{}); err != nil {
+		t.Fatalf("Could not send the message to Webhook: %s", err)
 	}
 }
 
