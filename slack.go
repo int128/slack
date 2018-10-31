@@ -14,6 +14,7 @@ import (
 // See https://api.slack.com/docs/message-formatting for details.
 type Message struct {
 	Username    string       `json:"username,omitempty"`
+	Channel     string       `json:"channel,omitempty"`
 	IconEmoji   string       `json:"icon_emoji,omitempty"`
 	IconURL     string       `json:"icon_url,omitempty"`
 	Text        string       `json:"text,omitempty"`
