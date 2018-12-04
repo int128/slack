@@ -13,6 +13,9 @@ type Slack struct{}
 
 // Mention returns the user mention for Slack.
 func (d *Slack) Mention(username string) string {
+	if username == "" {
+		return ""
+	}
 	return fmt.Sprintf("<@%s>", username)
 }
 
@@ -21,5 +24,8 @@ type Mattermost struct{}
 
 // Mention returns the user mention for Mattermost.
 func (d *Mattermost) Mention(username string) string {
+	if username == "" {
+		return ""
+	}
 	return fmt.Sprintf("@%s", username)
 }
