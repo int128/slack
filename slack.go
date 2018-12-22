@@ -10,18 +10,18 @@ import (
 	"net/http"
 )
 
+type triState *bool
+
 var enable = true
 var disable = false
 
-type boolFlag *bool
-
 // Enable represents a pointer to true value, for *bool.
-var Enable = boolFlag(&enable)
+var Enable = triState(&enable)
 
 // Disable represents a pointer to false value, for *bool.
-var Disable = boolFlag(&disable)
+var Disable = triState(&disable)
 
-// Message represents a message sent via Incoming Webhook API.
+// Message represents a message sent via Incoming Webhooks API.
 //
 // See https://api.slack.com/docs/message-formatting and
 // https://api.slack.com/docs/message-link-unfurling.
@@ -31,9 +31,9 @@ type Message struct {
 	IconEmoji   string       `json:"icon_emoji,omitempty"`
 	IconURL     string       `json:"icon_url,omitempty"`
 	Text        string       `json:"text,omitempty"`
-	Mrkdwn      boolFlag     `json:"mrkdwn,omitempty"`       // Set false to disable formatting.
-	UnfurlMedia boolFlag     `json:"unfurl_media,omitempty"` // Set false to disable unfurling.
-	UnfurlLinks boolFlag     `json:"unfurl_links,omitempty"` // Set true to enable unfurling.
+	Mrkdwn      triState     `json:"mrkdwn,omitempty"`       // Set false to disable formatting.
+	UnfurlMedia triState     `json:"unfurl_media,omitempty"` // Set false to disable unfurling.
+	UnfurlLinks triState     `json:"unfurl_links,omitempty"` // Set true to enable unfurling.
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
@@ -66,7 +66,7 @@ type AttachmentField struct {
 	Short bool   `json:"short,omitempty"`
 }
 
-// Client provides a client for Slack Incoming Webhook API.
+// Client provides a client for Slack Incoming Webhooks API.
 type Client struct {
 	WebhookURL string       // Webhook URL (mandatory)
 	HTTPClient *http.Client // Default to http.DefaultClient
@@ -80,7 +80,7 @@ func (c *Client) Send(message *Message) error {
 	}
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(message); err != nil {
-		return fmt.Errorf("Could not encode the message to JSON: %s", err)
+		return fmt.Errorf("could not encode the message to JSON: %s", err)
 	}
 	hc := c.HTTPClient
 	if hc == nil {
@@ -88,20 +88,20 @@ func (c *Client) Send(message *Message) error {
 	}
 	resp, err := hc.Post(c.WebhookURL, "application/json", &b)
 	if err != nil {
-		return fmt.Errorf("Could not send the request: %s", err)
+		return fmt.Errorf("could not send the request: %s", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Slack API returned %s (could not read body: %s)", resp.Status, err)
+			return fmt.Errorf("got error from Slack API: %s (could not read body: %s)", resp.Status, err)
 		}
-		return fmt.Errorf("Slack API returned %s: %s", resp.Status, string(b))
+		return fmt.Errorf("got error from Slack API: %s, %s", resp.Status, string(b))
 	}
 	return nil
 }
 
-// Send sends the message to Slack via Incomming Webhook API.
+// Send sends the message to Slack via Incomming Webhooks API.
 // It returns an error if a HTTP client returned non-2xx status or network error.
 func Send(WebhookURL string, message *Message) error {
 	return (&Client{WebhookURL: WebhookURL}).Send(message)

@@ -15,12 +15,13 @@ import (
 const webhook = "https://hooks.slack.com/services/..."
 
 func ExampleSend() {
-	if err := slack.Send(webhook, &slack.Message{
+	err := slack.Send(webhook, &slack.Message{
 		Username:  "mybot",
 		IconEmoji: ":star:",
 		Text:      "Hello World!",
-	}); err != nil {
-		panic(fmt.Errorf("Could not send the message to Slack: %s", err))
+	})
+	if err != nil {
+		panic(fmt.Errorf("could not send the message to Slack: %s", err))
 	}
 }
 
@@ -29,12 +30,13 @@ func ExampleClient_Send() {
 		WebhookURL: webhook,
 		HTTPClient: nil, // urlfetch.Client(ctx) on App Engine
 	}
-	if err := c.Send(&slack.Message{
+	err := c.Send(&slack.Message{
 		Username:  "mybot",
 		IconEmoji: ":star:",
 		Text:      "Hello World!",
-	}); err != nil {
-		panic(fmt.Errorf("Could not send the message to Slack: %s", err))
+	})
+	if err != nil {
+		panic(fmt.Errorf("could not send the message to Slack: %s", err))
 	}
 }
 
@@ -53,17 +55,18 @@ func TestSend(t *testing.T) {
 			return
 		}
 		body := strings.TrimSpace(string(b))
-		if body != "{}" {
-			t.Errorf("Body wants {} but %s", body)
+		if want := `{"text":"Hello World!"}`; body != want {
+			t.Errorf("Body wants %s but %s", want, body)
 		}
 	}))
 	defer s.Close()
-	if err := slack.Send(s.URL+"/webhook", &slack.Message{}); err != nil {
-		t.Fatalf("Could not send the message to Webhook: %s", err)
+	err := slack.Send(s.URL+"/webhook", &slack.Message{Text: "Hello World!"})
+	if err != nil {
+		t.Fatalf("Send returned error: %s", err)
 	}
 }
 
-func TestMarshalMessage_empty(t *testing.T) {
+func TestMessage(t *testing.T) {
 	m := slack.Message{}
 	b, err := json.Marshal(&m)
 	if err != nil {
@@ -75,7 +78,7 @@ func TestMarshalMessage_empty(t *testing.T) {
 	}
 }
 
-func TestMarshalMessage_boolFlag(t *testing.T) {
+func Test_triState(t *testing.T) {
 	m := slack.Message{
 		Mrkdwn: slack.Disable,
 	}
