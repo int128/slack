@@ -66,6 +66,60 @@ func TestSend(t *testing.T) {
 	}
 }
 
+func ExampleGetErrorResponse() {
+	err := slack.Send(webhook, &slack.Message{
+		Text: "Hello World!",
+	})
+	if err != nil {
+		if resp := slack.GetErrorResponse(err); resp != nil {
+			if resp.StatusCode() >= 500 {
+				// you can retry sending the message
+			}
+		}
+		panic(fmt.Errorf("could not send the message to Slack: %s", err))
+	}
+}
+
+func TestGetErrorResponse(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		if r.Method != "POST" {
+			t.Errorf("Method wants POST but %s", r.Method)
+		}
+		if r.URL.Path != "/webhook" {
+			t.Errorf("Path wants /webhook but %s", r.URL.Path)
+		}
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Could not read body: %s", err)
+			return
+		}
+		body := strings.TrimSpace(string(b))
+		if body != "{}" {
+			t.Errorf("Body wants {} but %s", body)
+		}
+		w.WriteHeader(400)
+		if _, err := fmt.Fprint(w, "invalid_payload"); err != nil {
+			t.Errorf("Could not write body: %s", err)
+		}
+	}))
+	defer s.Close()
+	err := slack.Send(s.URL+"/webhook", &slack.Message{})
+	if err == nil {
+		t.Fatalf("err wants non-nil but got nil")
+	}
+	errResp := slack.GetErrorResponse(err)
+	if errResp == nil {
+		t.Fatalf("GetErrorResponse wants non-nil but nil")
+	}
+	if errResp.StatusCode() != 400 {
+		t.Errorf("StatusCode wants 400 but %d", errResp.StatusCode())
+	}
+	if errResp.Body() != "invalid_payload" {
+		t.Errorf("Body wants invalid_payload but %s", errResp.Body())
+	}
+}
+
 func TestMessage(t *testing.T) {
 	m := slack.Message{}
 	b, err := json.Marshal(&m)

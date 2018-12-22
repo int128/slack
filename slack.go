@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 )
@@ -72,15 +73,47 @@ type Client struct {
 	HTTPClient *http.Client // Default to http.DefaultClient
 }
 
+// ErrorResponse represents an error response from Slack API.
+type ErrorResponse interface {
+	StatusCode() int // non-2xx status code
+	Body() string    // Response body
+}
+
+// GetErrorResponse returns ErrorResponse if Slack API returned an error response.
+func GetErrorResponse(err error) ErrorResponse {
+	r, ok := errors.Cause(err).(ErrorResponse)
+	if ok {
+		return r
+	}
+	return nil
+}
+
+type slackError struct {
+	statusCode int
+	body       string
+}
+
+func (e *slackError) Error() string {
+	return fmt.Sprintf("error from Slack API: status=%d, body=%s", e.statusCode, e.body)
+}
+
+func (e *slackError) StatusCode() int {
+	return e.statusCode
+}
+
+func (e *slackError) Body() string {
+	return e.body
+}
+
 // Send sends the message to Slack.
 // It returns an error if a HTTP client returned non-2xx status or network error.
 func (c *Client) Send(message *Message) error {
 	if message == nil {
-		return fmt.Errorf("message is nil")
+		return errors.New("message is nil")
 	}
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(message); err != nil {
-		return fmt.Errorf("could not encode the message to JSON: %s", err)
+		return errors.Wrap(err, "could not encode the message to JSON")
 	}
 	hc := c.HTTPClient
 	if hc == nil {
@@ -88,15 +121,15 @@ func (c *Client) Send(message *Message) error {
 	}
 	resp, err := hc.Post(c.WebhookURL, "application/json", &b)
 	if err != nil {
-		return fmt.Errorf("could not send the request: %s", err)
+		return errors.Wrap(err, "could not send the request")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("got error from Slack API: %s (could not read body: %s)", resp.Status, err)
-		}
-		return fmt.Errorf("got error from Slack API: %s, %s", resp.Status, string(b))
+		b, _ := ioutil.ReadAll(resp.Body)
+		return errors.WithStack(&slackError{
+			statusCode: resp.StatusCode,
+			body:       string(b),
+		})
 	}
 	return nil
 }
