@@ -66,6 +66,20 @@ func TestSend(t *testing.T) {
 	}
 }
 
+func TestSend_NilMessage(t *testing.T) {
+	err := slack.Send("/webhook", nil)
+	if err == nil {
+		t.Error("err wants non-nil but nil")
+	}
+}
+
+func TestSend_EmptyWebhookURL(t *testing.T) {
+	err := slack.Send("", &slack.Message{})
+	if err == nil {
+		t.Error("err wants non-nil but nil")
+	}
+}
+
 func ExampleGetErrorResponse() {
 	err := slack.Send(webhook, &slack.Message{
 		Text: "Hello World!",
@@ -108,6 +122,12 @@ func TestGetErrorResponse(t *testing.T) {
 	if err == nil {
 		t.Fatalf("err wants non-nil but got nil")
 	}
+	if !strings.Contains(err.Error(), "400") {
+		t.Errorf("err.Error should contain status code but %s", err.Error())
+	}
+	if !strings.Contains(err.Error(), "invalid_payload") {
+		t.Errorf("err.Error should contain body but %s", err.Error())
+	}
 	errResp := slack.GetErrorResponse(err)
 	if errResp == nil {
 		t.Fatalf("GetErrorResponse wants non-nil but nil")
@@ -117,6 +137,14 @@ func TestGetErrorResponse(t *testing.T) {
 	}
 	if errResp.Body() != "invalid_payload" {
 		t.Errorf("Body wants invalid_payload but %s", errResp.Body())
+	}
+}
+
+func TestGetErrorResponse_NonErrorResponse(t *testing.T) {
+	err := fmt.Errorf("some error")
+	resp := slack.GetErrorResponse(err)
+	if resp != nil {
+		t.Errorf("GetErrorResponse wants nil but got %+v", resp)
 	}
 }
 
