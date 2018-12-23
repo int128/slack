@@ -6,9 +6,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type triState *bool
@@ -41,22 +42,23 @@ type Message struct {
 // Attachment represents an attachment of a message.
 // See https://api.slack.com/docs/message-attachments for details.
 type Attachment struct {
-	Fallback   string            `json:"fallback,omitempty"`
-	Color      string            `json:"color,omitempty"`
-	Pretext    string            `json:"pretext,omitempty"`
-	AuthorName string            `json:"author_name,omitempty"`
-	AuthorLink string            `json:"author_link,omitempty"`
-	AuthorIcon string            `json:"author_icon,omitempty"`
-	Title      string            `json:"title,omitempty"`
-	TitleLink  string            `json:"title_link,omitempty"`
-	Text       string            `json:"text,omitempty"`
-	Fields     []AttachmentField `json:"fields,omitempty"`
-	ImageURL   string            `json:"image_url,omitempty"`
-	ThumbURL   string            `json:"thumb_url,omitempty"`
-	Footer     string            `json:"footer,omitempty"`
-	FooterIcon string            `json:"footer_icon,omitempty"`
-	Timestamp  int64             `json:"ts,omitempty"`
-	MrkdwnIn   []string          `json:"mrkdwn_in,omitempty"` // Valid values are pretext, text, fields
+	Fallback   string             `json:"fallback,omitempty"`
+	Color      string             `json:"color,omitempty"`
+	Pretext    string             `json:"pretext,omitempty"`
+	AuthorName string             `json:"author_name,omitempty"`
+	AuthorLink string             `json:"author_link,omitempty"`
+	AuthorIcon string             `json:"author_icon,omitempty"`
+	Title      string             `json:"title,omitempty"`
+	TitleLink  string             `json:"title_link,omitempty"`
+	Text       string             `json:"text,omitempty"`
+	Fields     []AttachmentField  `json:"fields,omitempty"`
+	Actions    []AttachmentAction `json:"actions,omitempty"`
+	ImageURL   string             `json:"image_url,omitempty"`
+	ThumbURL   string             `json:"thumb_url,omitempty"`
+	Footer     string             `json:"footer,omitempty"`
+	FooterIcon string             `json:"footer_icon,omitempty"`
+	Timestamp  int64              `json:"ts,omitempty"`
+	MrkdwnIn   []string           `json:"mrkdwn_in,omitempty"` // Valid values are pretext, text, fields
 }
 
 // AttachmentField represents a field in an attachment.
@@ -67,6 +69,15 @@ type AttachmentField struct {
 	Short bool   `json:"short,omitempty"`
 }
 
+// AttachmentAction represents an action in an attachment.
+// See https://api.slack.com/docs/message-attachments for details.
+type AttachmentAction struct {
+	Type  string `json:"type,omitempty"`
+	Text  string `json:"text,omitempty"`
+	URL   string `json:"url,omitempty"`
+	Style string `json:"style,omitempty"`
+}
+
 // Client provides a client for Slack Incoming Webhooks API.
 type Client struct {
 	WebhookURL string       // Webhook URL (mandatory)
@@ -74,6 +85,7 @@ type Client struct {
 }
 
 // ErrorResponse represents an error response from Slack API.
+// See https://api.slack.com/incoming-webhooks#handling_errors for details.
 type ErrorResponse interface {
 	StatusCode() int // non-2xx status code
 	Body() string    // Response body
