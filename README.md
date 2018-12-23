@@ -30,44 +30,7 @@ func main() {
 }
 ```
 
-If you are on Google App Engine:
-
-```go
-package main
-
-import (
-	"log"
-	"net/http"
-
-	"github.com/int128/slack"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/urlfetch"
-)
-
-const webhook = "https://hooks.slack.com/services/..."
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-	hc := urlfetch.Client(ctx)
-	sc := slack.Client{
-		WebhookURL: webhook,
-		HTTPClient: hc,
-	}
-	if err := sc.Send(&slack.Message{
-		Username:  "mybot",
-		IconEmoji: ":star:",
-		Text:      "Hello World!",
-	}); err != nil {
-		log.Fatalf("Could not send the message to Slack: %s", err)
-		http.Error(w, "Could not send the message to Slack", 500)
-	}
-}
-
-func main() {
-	http.HandleFunc("/", handler)
-	appengine.Main()
-}
-```
+See also [example/main.go](example/main.go).
 
 
 ## Contributions
