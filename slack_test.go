@@ -122,6 +122,7 @@ func TestGetErrorResponse(t *testing.T) {
 	if err == nil {
 		t.Fatalf("err wants non-nil but got nil")
 	}
+	t.Logf("expected error: %s", err)
 	if !strings.Contains(err.Error(), "400") {
 		t.Errorf("err.Error should contain status code but %s", err.Error())
 	}

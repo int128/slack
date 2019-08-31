@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
 type triState *bool
@@ -93,8 +93,8 @@ type ErrorResponse interface {
 
 // GetErrorResponse returns ErrorResponse if Slack API returned an error response.
 func GetErrorResponse(err error) ErrorResponse {
-	r, ok := errors.Cause(err).(ErrorResponse)
-	if ok {
+	var r ErrorResponse
+	if xerrors.As(err, &r) {
 		return r
 	}
 	return nil
@@ -106,7 +106,7 @@ type slackError struct {
 }
 
 func (e *slackError) Error() string {
-	return fmt.Sprintf("error from Slack API: status=%d, body=%s", e.statusCode, e.body)
+	return fmt.Sprintf("status=%d, body=%s", e.statusCode, e.body)
 }
 
 func (e *slackError) StatusCode() int {
@@ -121,11 +121,11 @@ func (e *slackError) Body() string {
 // It returns an error if a HTTP client returned non-2xx status or network error.
 func (c *Client) Send(message *Message) error {
 	if message == nil {
-		return errors.New("message is nil")
+		return xerrors.New("message is nil")
 	}
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(message); err != nil {
-		return errors.Wrap(err, "could not encode the message to JSON")
+		return xerrors.Errorf("could not encode the message to JSON: %w", err)
 	}
 	hc := c.HTTPClient
 	if hc == nil {
@@ -133,12 +133,12 @@ func (c *Client) Send(message *Message) error {
 	}
 	resp, err := hc.Post(c.WebhookURL, "application/json", &b)
 	if err != nil {
-		return errors.Wrap(err, "could not send the request")
+		return xerrors.Errorf("could not send the request: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		b, _ := ioutil.ReadAll(resp.Body)
-		return errors.WithStack(&slackError{
+		return xerrors.Errorf("error from Slack API: %w", &slackError{
 			statusCode: resp.StatusCode,
 			body:       string(b),
 		})
